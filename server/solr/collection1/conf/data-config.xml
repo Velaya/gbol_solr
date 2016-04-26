@@ -1,0 +1,132 @@
+  <dataSource type="JdbcDataSource"
+              driver="com.mysql.jdbc.Driver"
+              url="jdbc:mysql://localhost:3306/gbol_python"
+              user="root"
+              password="we6javg"
+              batchSize="5000"
+              readOnly="true"/>
+
+    <document name="content">
+      <entity name="occurence"
+              transformer="RegexTransformer"
+              query="SELECT
+                        CONCAT(tripleidstore.institutioncode,
+                            '/',
+                            tripleidstore.collectioncode,
+                            '/',
+                            tripleidstore.unitid) AS id,
+                        occurrence.occurrenceid,
+                        occurrence.recordURI,
+                        occurrence.guid,
+                        occurrence.created_when,
+                        occurrence.country,
+                        occurrence.locality,
+                        occurrence.isocountrycode,
+                        occurrence.gatheringdate,
+                        occurrence.gatheringyear,
+                        occurrence.fieldnumber,
+                        occurrence.collectornumber,
+                        identification.identificationid,
+                        IF(identification.preferred = 1,
+                                identification.fullScientificName,NULL) AS fullScientificName,
+                        IF(identification.preferred = 0,
+                                GROUP_CONCAT(DISTINCT taxonAtomised.canonical),NULL) AS alternativeIdentifications,
+                        IF(taxonAtomised.genus = '',
+                            'N.A.',
+                            taxonAtomised.genus) AS genus,
+                        taxonAtomised.species AS epithet,
+                        IF(taxonAtomised.canonical = '',
+                            'N.A',
+                            taxonAtomised.canonical) AS scientificName,
+                        GROUP_CONCAT(DISTINCT identifiers.identifiername) AS identifiername,
+                        IFNULL(collectors.collectorname, 'N.A') AS collectorname,
+                        coordinates.longitude,
+                        coordinates.latitude,
+                        coordinates.coordinateErrorDistanceInMeters,
+                        coordinates.coordinatesMethod,
+                        CONCAT(coordinates.latitude,
+                                ',',
+                                coordinates.longitude) AS geo_locality,
+                        tripleidstore.collectioncode,
+                        tripleidstore.institutioncode,
+                        tripleidstore.unitid,
+                        GROUP_CONCAT(DISTINCT CONCAT(higherrank, ': ', highertaxon)) AS highertaxon,
+                        association.fk_tripleidstoreid1, association.fk_tripleidstoreid2, association.associationtype,
+                        /* GROUP_CONCAT(IFNULL(multimedia.type,'')) AS mm_type, GROUP_CONCAT(IFNULL(multimedia.format,''))  AS mm_format, GROUP_CONCAT(IFNULL(multimedia.url,'')) AS mm_url, */
+                        /* PROBLEM! multimedia.type AS mm_type */
+                        multimedia.mm_url,
+                        multimedia.mm_format,
+                        multimedia.mm_copyrights,
+                        multimedia.mm_termsofuse,
+                        multimedia.mm_licenses,
+                        typedesignation.typestatus,
+                        typedesignation.verificationNotes,
+                        IFNULL(recordbasis.recordbasis, 'N.A.') AS recordbasis,
+                        bio_datasource.last_harvested,
+                        bio_datasource.url AS source_url,
+                        bio_datasource.url AS biocase_url,
+                        bio_datasource.parentInstitution
+                        FROM
+                        occurrence
+                            LEFT JOIN
+                        identification ON occurrence.occurrenceid = identification.fk_occurrenceid
+                            LEFT JOIN
+                        taxonAtomised ON identification.fullScientificName = taxonAtomised.fullscientificnamegenerated
+                            LEFT JOIN
+                        identifiers ON identification.identificationid = identifiers.fk_rawidentificationid
+                            LEFT JOIN
+                        collectors ON collectors.fk_occurrenceid = occurrence.occurrenceid
+                            LEFT JOIN
+                        coordinates ON coordinates.fk_occurrenceid = occurrence.occurrenceid
+                            INNER JOIN
+                        tripleidstore ON occurrence.fk_tripleidstoreid = tripleidstore.tripleidstoreid
+                            LEFT JOIN
+                        identificationtohigher ON identificationtohigher.fk_rawidentificationid = identification.identificationid
+                            LEFT JOIN
+                        rawhigher ON identificationtohigher.fk_highertaxaid = rawhigher.highertaxaid
+                        /* Enable this join to obtain association information (may slow down harvesing significantly) */
+                            LEFT JOIN
+                        /* this is a simplified condition, which is more than 100 times faster. However it misses some associations */
+                        association ON (tripleidstoreid = fk_tripleidstoreid1 OR tripleidstoreid = fk_tripleidstoreid2)
+                          /* Todo: use the correct (very slow) condition for the left join
+                          association ON (tripleidstoreid = fk_tripleidstoreid1 OR tripleidstoreid = fk_tripleidstoreid2) */
+                            LEFT JOIN
+                        typedesignation ON (occurrence.occurrenceid = typedesignation.fk_occurrenceid)
+                            LEFT JOIN
+                        recordbasis ON recordbasis.recordbasisid = occurrence.fk_recordbasisid
+                            JOIN
+                        bio_datasource ON bio_datasource.id = occurrence.fk_datasourceid
+                            LEFT JOIN
+                        (SELECT
+                            fk_tripleidstoreid,
+                                GROUP_CONCAT(IFNULL(multimedia.url, '')) AS mm_url,
+                                GROUP_CONCAT(DISTINCT IFNULL(multimedia.format, '')) AS mm_format,
+                                GROUP_CONCAT(DISTINCT IFNULL(multimedia.copyrights, '')) AS mm_copyrights,
+                                GROUP_CONCAT(DISTINCT IFNULL(multimedia.termsofuse, '')) AS mm_termsofuse,
+                                GROUP_CONCAT(DISTINCT IFNULL(multimedia.licenses, '')) AS mm_licenses,
+                                GROUP_CONCAT(IFNULL(multimedia.type, '')) AS mm_type
+                        FROM
+                            multimedia
+                        GROUP BY fk_tripleidstoreid) AS multimedia ON multimedia.fk_tripleidstoreid = occurrence.fk_tripleidstoreid
+                        /* Delta import: use parameter clean=false to trigger */
+                        WHERE
+                        ('${dataimporter.request.clean}' != 'false'
+                            OR last_harvested_processing > '${dataimporter.last_index_time}')
+                            /* temporary excluding broken entries without scientific name */
+                            AND taxonAtomised.canonical IS NOT NULL
+                        GROUP BY tripleidstoreid
+                        LIMIT 5000000">
+
+      <!-- Split multivalued fields. Delimiter = , -->
+  <field column="fullScientificName" splitBy="," sourceColName="fullScientificName"  />
+  <field column="identifiername" splitBy="," sourceColName="identifiername"  />
+  <field column="alternativeIdentifications" splitBy="," sourceColName="alternativeIdentifications"  />
+  <field column="mm_url" splitBy="," sourceColName="mm_url"  />
+  <field column="mm_format" splitBy="," sourceColName="mm_format" />
+  <field column="mm_type" splitBy=","  sourceColName="mm_type"/>
+  <field column="mm_copyrights" splitBy=","  sourceColName="mm_copyrights"/>
+  <field column="mm_termsofuse" splitBy=","  sourceColName="mm_termsofuse"/>
+  <field column="mm_termsofuse" splitBy=","  sourceColName="mm_termsofuse"/>
+    </entity>
+  </document>
+</dataConfig>

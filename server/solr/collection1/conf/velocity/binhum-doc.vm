@@ -1,0 +1,100 @@
+<div class="result-title"><b>#field('name')</b><span class="mlt">   #if($params.getBool('mlt', false) == false)<a href="#lensNoQ&q=id:$docId&mlt=true">More Like This</a>#end</span></div>
+##do we have a physical store for this product
+#set($store = $doc.getFieldValue('store'))
+#if($store)<div class="map"><img src="http://maps.google.com/maps/api/staticmap?&zoom=12&size=150x80&maptype=roadmap&markers=$doc.getFieldValue('store')&sensor=false" /><div><small><a target="_map" href="http://maps.google.com/?q=$store&amp;source=embed">Larger Map</a></small></div></div>#end
+
+
+<h2>#field('fullScientificName')</h2>
+<h3>Basic Info</h3>
+<div>ID: #field('id')</div>
+<div>Full Name: <b>#field('fullScientificName')</b></div>
+<div>Name: #field('scientificName')</div>
+<div>Genus: #field('genus')</div>
+<div>Higher Taxon: #field('highertaxon') (#field('higherrank')) </div>
+<div>Typus: #field('typestatus')</div>
+<div>Record Basis: #field('recordbasis')</div>
+
+<h3>Some IDs</h3>
+<div>UUID: #field('uuid') <span style="font-size:0.8em; color:#555555;">(randomly generated at import)<span></div>
+<div>RecordURI: #field('recordURI') <span style="font-size:0.8em; color:#555555;"><span></div>
+<div>GUID: #field('guid') <span style="font-size:0.8em; color:#555555;"><span></div>
+<div>Field Number: #field('fieldnumber') <span style="font-size:0.8em; color:#555555;"><span></div>
+
+<h3>Geo Information</h3>
+<div>Country: #field('country') (#field('isocountrycode'))</div>
+<div>Location: #field('locality')</div>
+<div>Coordinates: 
+  #if ($doc.getFieldValue('longitude'))
+    Lat:#field('latitude'), Long:#field('longitude'): 
+	   #if ($doc.getFieldValue('coordinateErrorDistanceInMeters'))
+	     (Genauigkeit: #field('coordinateErrorDistanceInMeters') m)
+	   #else
+	     (Genauigkeit unbekannt)
+	   #end
+  #else
+    nicht eingetragen!
+  #end
+  , Quelle: #field('coordinatesMethod')
+  </div>
+<div>Google Maps: 
+  #if ($doc.getFieldValue('longitude'))
+    <a target="_new" href="http://maps.google.com/maps?q=#field('latitude'),#field('longitude')+(Fundstelle)&t=m&z=10">&Uuml;bersicht (Karkte)</a>&nbsp;&nbsp;
+	<a target="_new" href="http://maps.google.com/maps?q=#field('latitude'),#field('longitude')+(Fundstelle)&t=k&z=18">Detail (Satellit)</a>
+  #else
+    keine Koordinaten vorhanden!
+  #end	
+</div>
+<div>Geo-Location: #field('geo_locality')</div>
+<h3>Collector</h3>
+<div>Collected by: #field('collectorname')</div>
+<div>Collection Date:#field('gatheringdate') (#field('gatheringyear'))</div>
+<div>Identified by: #field('identifiername')</div>
+<h3>Institute</h3>
+<div>Institute: #field('institutioncode')</div>
+<div>Collection Code: #field('collectioncode')</div>
+<div>Unit ID: #field('unitid')</div>
+<h3>Connected with</h3>
+<div>
+  <a href="/solr/browse?q=tripleidstoreid:#field('fk_tripleidstoreid1')">#field('fullScientificName')</a>
+  <->
+  <a href="/solr/browse?q=tripleidstoreid:#field('fk_tripleidstoreid2')">#field('fullScientificName')</a>
+  </div>
+<div>Beziehung durch:<a href="/solr/browse?q=tripleidstoreid:#field('associationtype')">#field('associationtype')</a></div>
+
+<h3>Multimedia</h3>
+<div>Type: #field('mm_type') (#field('mm_format'))</div>
+<div>
+  
+  #if ($doc.getFieldValue('mm_format') == 'jpg' )
+	 <a href="#field('mm_url')" target="_new" title="#field('mm_url')"><img src="#field('mm_url')" height="80px" /></a><br />
+  #else
+     keine Multimediadaten vorhanden oder eingebettet: <br />
+	 <a href="#field('mm_url')" target="_new">#field('mm_url')</a>
+  #end
+</div>
+<h3>Harvesting Info</h3>
+<div>created: #field('created_when')</div>
+<div>harvested on: #field('last_harvested')</div>
+<div>Source-URL: <a href="#field('source_url')" target="_new">#field('source_url')</a></div>
+<div>Biocase_URL: #field('biocase_url')</div>
+<div>Biocase UDDI-key: #field('uddi_key')</div>
+
+<div class="mlt">
+  #set($mlt = $mltResults.get($docId))
+  #set($mltOn = $params.getBool('mlt'))
+  #if($mltOn == true)<div class="field-name">Similar Items</div>#end
+  #if ($mltOn && $mlt && $mlt.size() > 0)
+  <ul>
+    #foreach($mltHit in $mlt)
+      #set($mltId = $mltHit.getFieldValue('id'))
+      <li><div><a href="#url_for_home?q=id:$mltId">$mltId</a></div><div><span class="field-name">Name:</span> $mltHit.getFieldValue('name')</div>
+        <div><span class="field-name">Price:</span> $!number.currency($mltHit.getFieldValue('price')) <span class="field-name">In Stock:</span> $mltHit.getFieldValue('inStock')</div>
+
+      </li>
+    #end
+  </ul>
+  #elseif($mltOn && $mlt.size() == 0)
+    <div>No Similar Items Found</div>
+  #end
+</div>
+#parse('debug.vm')
