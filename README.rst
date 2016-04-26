@@ -1,0 +1,1 @@
+# gbol_solr
