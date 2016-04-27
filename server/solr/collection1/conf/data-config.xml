@@ -17,25 +17,24 @@
 	            p.taxon AS parenttaxon,
 	            gi.institute_short AS institute,
 	                (SELECT GROUP_CONCAT(
-		                    CONCAT('\"', d.field_id, '\"\:\"',
+		                    CONCAT(d.field_id, ':',
 			                    IF(d.field_id = 2, SUBSTR(d.term, 1, 11),
 				                    COALESCE(d.term,'')
-			                    ), '\"'
-		                        ) SEPARATOR ',')
+			                    ), ) SEPARATOR ',')
 		            FROM GBOL_Data2Specimen ds
 			        INNER JOIN GBOL_Data d ON d.id = ds.data_id
 			        INNER JOIN GBOL_Data_Fields f ON (f.id = d.field_id AND f.lang='de')
 			        WHERE d.field_id IN (7,26,1) AND ds.specimen_id = s.id
 	            ) AS data,
-	            COALESCE(sc.`name`,'') AS vernacular,
+	            COALESCE(sc.name,'') AS vernacular,
 	            IF(s.barcode>0, 1, 0) AS barcode
                 FROM GBOL_Specimen s
 	                LEFT JOIN GBOL_Taxa t ON t.id = s.taxon_id
 	                LEFT JOIN GBOL_Taxa p ON p.id = t.parent_id
-	                LEFT JOIN GBOL_TaxaCommonNames sc ON (s.taxon_id=sc.taxon_id AND sc.`code`='de')
+	                LEFT JOIN GBOL_TaxaCommonNames sc ON (s.taxon_id=sc.taxon_id AND sc.code='de')
 	                LEFT JOIN GBOL_Institutes gi ON gi.institute_id=s.institute_id
 	                LEFT JOIN GBOL_Geo g ON g.specimen_id = s.id
-                ORDER BY `taxon`">
+                ORDER BY taxon">
 
       <!-- Split multivalued fields. Delimiter = , -->
     <field column="data" splitBy="," sourceColName="data"  />
