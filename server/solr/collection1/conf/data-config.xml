@@ -17,10 +17,11 @@
 	            p.taxon AS parenttaxon,
 	            gi.institute_short AS institute,
 	                (SELECT GROUP_CONCAT(
-		                    CONCAT(d.field_id, ':',
-			                    IF(d.field_id = 2, SUBSTR(d.term, 1, 11),
-				                    COALESCE(d.term,'')
-			                    ), ) SEPARATOR ',')
+						CONCAT('', d.field_id, ':',
+							IF(d.field_id = 2, SUBSTR(d.term, 1, 11),
+							COALESCE(d.term,'')
+							), ''
+					) SEPARATOR ',')
 		            FROM GBOL_Data2Specimen ds
 			        INNER JOIN GBOL_Data d ON d.id = ds.data_id
 			        INNER JOIN GBOL_Data_Fields f ON (f.id = d.field_id AND f.lang='de')
