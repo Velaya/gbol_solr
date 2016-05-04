@@ -70,7 +70,6 @@
    <field name="institute" type="string" indexed="true" stored="true"/>
    <field name="vernacular" type="string" indexed="true" stored="true"/>
    <field name="barcode" type="string" indexed="true" stored="true"/>
-   <field name="institute" type="string" indexed="true" stored="true"/>
    <field name="data" type="string" indexed="true" stored="true"  multiValued="true"/>
  </fields>
 
