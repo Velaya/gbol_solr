@@ -84,10 +84,8 @@
 
   <!-- Fields for full text search -->
   <copyField source="taxon" dest="text"/>
-  <copyField source="scientificName" dest="text"/>
   <copyField source="institute" dest="text"/>
 
   <!-- content for autocomplete -->
   <copyField source="taxon" dest="autocomplete"/>
-  <copyField source="scientificName" dest="autocomplete"/>
 </schema>
