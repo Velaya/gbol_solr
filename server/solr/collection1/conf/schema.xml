@@ -71,6 +71,9 @@
    <field name="vernacular" type="string" indexed="true" stored="true"/>
    <field name="barcode" type="string" indexed="true" stored="true"/>
    <field name="data" type="string" indexed="true" stored="true"  multiValued="true"/>
+
+   <field name="text" type="text_species_names_with_synonyms" indexed="true" stored="false" multiValued="true"/>
+   <field name="autocomplete" type="text_species_names_with_synonyms" indexed="true" stored="true" multiValued="true"/>
  </fields>
 
   <!-- defaults -->
